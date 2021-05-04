@@ -2,6 +2,8 @@ package chess;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import boardGame.Board;
 import boardGame.Piece;
@@ -15,6 +17,8 @@ public class ChessMatch {
 	private int turn;
 	private Color currentPlayer;
 	private Board board;
+	private boolean check;
+	private boolean checkMate;
 	
 	private List<Piece> piecesOnTheBoard = new ArrayList();
 	private List<Piece> capturedPieces = new ArrayList();
@@ -29,7 +33,15 @@ public class ChessMatch {
 	public int getTurn() {
 		return turn;
 	}
+	
+	public boolean getCheck() {
+		return check;
+	}
 
+	public boolean getCheckMate() {
+		return checkMate;
+	}
+	
 	public Color getCurrentPlayer() {
 		return currentPlayer;
 	}
@@ -56,7 +68,21 @@ public class ChessMatch {
 		validateSourcePosition(source);
 		validateTargetPosition(source, target);
 		Piece capturedPiece = makeMove(source, target);
-		nextTurn();
+		
+		if(testCheck(currentPlayer)) {
+			undoMove(source, target, capturedPiece);
+			throw new ChessExeption("You can't put yourself in check !");
+		}
+		
+		check = (testCheck(opponent(currentPlayer))) ? true : false;
+		
+		if(testeCheckMate(opponent(currentPlayer))) {
+			checkMate = true;
+		}
+		else {
+			nextTurn();
+		}
+		
 		return (ChessPiece) capturedPiece;
 	}
 
@@ -71,7 +97,18 @@ public class ChessMatch {
 		}
 		return capturedPiece;
 	}
-
+	
+	public void undoMove(Position source,Position target, Piece capturedPiece  ) {
+		Piece p = board.removePiece(target);
+		board.placePiece(p, source);
+		
+		if(capturedPiece != null) {
+			board.placePiece(capturedPiece, target);
+			capturedPieces.remove(capturedPiece);
+			piecesOnTheBoard.add(capturedPiece);
+		}
+	}
+	
 	private void validateSourcePosition(Position position) {
 		if (!board.thereIsAPiece(position)) {
 			throw new ChessExeption("There is no piece on source position !");
@@ -90,25 +127,76 @@ public class ChessMatch {
 		}
 	}
 
+	private Color opponent(Color color) {
+		return (color == Color.Red) ? Color.Blue : Color.Red;
+	}
+	
+	private ChessPiece King(Color color) {
+		List<Piece> list = piecesOnTheBoard.stream().filter(x ->((ChessPiece)x).getColor() == color).collect(Collectors.toList());
+		for (Piece p : list) {
+			if (p instanceof King) {
+				return (ChessPiece)p;
+			}
+		} 
+		 throw new IllegalStateException("There is no " + color + " king on the board !");
+	}
+	
+	private boolean testCheck(Color color) {
+		Position kingPosition = King(color).getChessPosition().toPosistion();
+		List<Piece> opponentPieces = piecesOnTheBoard.stream().filter(x ->((ChessPiece)x).getColor() == opponent(color)).collect(Collectors.toList());
+		for (Piece p : opponentPieces) {
+			boolean[][] mat = p.possibleMoves();
+			if(mat[kingPosition.getRow()][kingPosition.getColumn()]) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private boolean testeCheckMate(Color color) {
+		if(!testCheck(color)) {
+			return false;
+		}
+		List<Piece> list = piecesOnTheBoard.stream().filter(x ->((ChessPiece)x).getColor() == color).collect(Collectors.toList());
+		for(Piece p : list) {
+			boolean[][] mat = p.possibleMoves();
+			for(int i = 0; i < board.getRows(); i++) {
+				for(int j = 0; j < board.getColumns(); j ++) {
+					if(mat[i][j]) {
+						Position source = ((ChessPiece)p).getChessPosition().toPosistion();
+						Position target = new Position(i,j);
+						Piece capturedPiece = makeMove(source, target);
+						boolean testCheck = testCheck(color);
+						undoMove(source, target, capturedPiece);
+						if(!testCheck) {
+							return false;
+						}
+					}
+				}
+			}
+		}
+		return true;
+	}
+	
 	private void placeNewpiece(char column, int row, ChessPiece piece) {
 		board.placePiece(piece, new ChessPosition(column, row).toPosistion());
 		piecesOnTheBoard.add(piece);
 	}
 
 	private void initialSetup() {
-		placeNewpiece('c', 1, new Rook(board, Color.Red));
-		placeNewpiece('c', 2, new Rook(board, Color.Red));
-		placeNewpiece('d', 2, new Rook(board, Color.Red));
-		placeNewpiece('e', 2, new Rook(board, Color.Red));
-		placeNewpiece('e', 1, new Rook(board, Color.Red));
-		placeNewpiece('d', 1, new King(board, Color.Red));
+		//placeNewpiece('c', 1, new Rook(board, Color.Red));
+		//placeNewpiece('c', 2, new Rook(board, Color.Red));
+		//placeNewpiece('d', 2, new Rook(board, Color.Red));
+		placeNewpiece('h', 7, new Rook(board, Color.Red));
+		placeNewpiece('d', 1, new Rook(board, Color.Red));
+		placeNewpiece('e', 1, new King(board, Color.Red));
 
-		placeNewpiece('c', 7, new Rook(board, Color.Blue));
-		placeNewpiece('c', 8, new Rook(board, Color.Blue));
-		placeNewpiece('d', 7, new Rook(board, Color.Blue));
-		placeNewpiece('e', 7, new Rook(board, Color.Blue));
-		placeNewpiece('e', 8, new Rook(board, Color.Blue));
-		placeNewpiece('d', 8, new King(board, Color.Blue));
+		//placeNewpiece('c', 7, new Rook(board, Color.Blue));
+		//placeNewpiece('c', 8, new Rook(board, Color.Blue));
+		//placeNewpiece('d', 7, new Rook(board, Color.Blue));
+		//placeNewpiece('e', 7, new Rook(board, Color.Blue));
+		placeNewpiece('b', 8, new Rook(board, Color.Blue));
+		placeNewpiece('a', 8, new King(board, Color.Blue));
 	}
 
 	private void nextTurn() {

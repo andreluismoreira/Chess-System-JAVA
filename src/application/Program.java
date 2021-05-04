@@ -12,13 +12,15 @@ import chess.ChessPosition;
 
 public class Program {
 
+//se por coluna dentro do tabuleiro e numero fora da erro(o contrario tmb) resolver	metodo chessposition
+	
 	public static void main(String[] args) {
 	
 		Scanner sc = new Scanner(System.in);
 		ChessMatch chessMatch = new ChessMatch();
 		List<ChessPiece> captured = new ArrayList();
 		
-		while (true) {
+		while (!chessMatch.getCheckMate()) {
 			try {
 				Ui.clearScreen();
 				Ui.printMatch(chessMatch, captured);
@@ -48,6 +50,8 @@ public class Program {
 				sc.nextLine();
 			}
 		}
+		Ui.clearScreen();
+		Ui.printMatch(chessMatch, captured);
 		 
 	}
 }
