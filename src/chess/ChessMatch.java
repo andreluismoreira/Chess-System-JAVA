@@ -24,8 +24,8 @@ public class ChessMatch {
 	private ChessPiece enPassantVunerable;
 	private ChessPiece promoted;
 
-	private List<Piece> piecesOnTheBoard = new ArrayList();
-	private List<Piece> capturedPieces = new ArrayList();
+	private List<Piece> piecesOnTheBoard = new ArrayList<Piece>();
+	private List<Piece> capturedPieces = new ArrayList<Piece>();
 
 	public ChessMatch() {
 		board = new Board(8, 8);
